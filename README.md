@@ -2,7 +2,7 @@
 
 An interactive web-based simulation that lets you explore one of the most beautiful results in combinatorial mathematics: **any 2^n x 2^n grid with one square removed can always be perfectly tiled using L-shaped trominoes.**
 
-[**Try it live**](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/l-tromino-tiling.html)
+[**Try it live**](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/)
 
 ## What is an L-Tromino?
 
@@ -72,7 +72,7 @@ Stuck? The hint button places the next piece from the recursive solution, helpin
 
 ## How to Use
 
-Just open `l-tromino-tiling.html` in any modern web browser. No dependencies, no build step, no server required — it's a single self-contained HTML file.
+Just open `index.html` in any modern web browser, or visit the [live version](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/). No dependencies, no build step, no server required — it's a single self-contained HTML file.
 
 ## Context
 
