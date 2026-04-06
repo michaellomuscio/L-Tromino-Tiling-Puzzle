@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Mutilated Chessboard - Domino Challenge</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .app {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  /* Tab Navigation */
+  .tab-bar {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 4px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .tab-bar a {
+    flex: 1;
+    text-align: center;
+    padding: 10px 16px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    color: #94a3b8;
+  }
+
+  .tab-bar a:hover { color: #e2e8f0; background: #334155; }
+
+  .tab-bar a.active {
+    background: linear-gradient(135deg, #1e40af, #7c3aed);
+    color: white;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    background: linear-gradient(135deg, #f59e0b, #ef4444, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 4px;
+  }
+
+  header p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+  }
+
+  .main-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+
+  .sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #334155;
+  }
+
+  .card h3 {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 10px;
+  }
+
+  .challenge-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .challenge-buttons button {
+    padding: 10px 14px;
+    border: 2px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    text-align: left;
+  }
+
+  .challenge-buttons button:hover { border-color: #f59e0b; background: #422006; }
+  .challenge-buttons button.active { border-color: #f59e0b; background: #422006; color: #fbbf24; }
+
+  .challenge-buttons button .label { display: block; }
+  .challenge-buttons button .sublabel {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #64748b;
+    margin-top: 2px;
+  }
+
+  .challenge-buttons button.active .sublabel { color: #a16207; }
+
+  .piece-preview-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .piece-mini-grid {
+    display: grid;
+    gap: 2px;
+  }
+
+  .piece-mini-cell {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: #0f172a;
+    transition: background 0.2s;
+  }
+
+  .piece-mini-cell.filled {
+    background: #f59e0b;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2);
+  }
+
+  .orient-btn {
+    padding: 10px 16px;
+    border: 2px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+  }
+
+  .orient-btn:hover { border-color: #f59e0b; background: #422006; }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .action-buttons button {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-undo { background: #334155; color: #e2e8f0; }
+  .btn-undo:hover { background: #475569; }
+  .btn-undo:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-clear { background: #7f1d1d; color: #fca5a5; }
+  .btn-clear:hover { background: #991b1b; }
+
+  .btn-reveal {
+    background: linear-gradient(135deg, #b45309, #d97706);
+    color: white;
+    font-size: 0.95rem;
+    padding: 11px 16px;
+  }
+  .btn-reveal:hover { opacity: 0.9; }
+
+  .btn-reset {
+    background: linear-gradient(135deg, #1e40af, #7c3aed);
+    color: white;
+    font-size: 0.95rem;
+    padding: 11px 16px;
+  }
+  .btn-reset:hover { opacity: 0.9; }
+
+  .stats {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .stat { text-align: center; flex: 1; }
+  .stat .value { font-size: 1.4rem; font-weight: 700; color: #f59e0b; }
+  .stat .label { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+
+  /* Color count display */
+  .color-counts {
+    display: flex;
+    justify-content: space-around;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px;
+    background: #0f172a;
+    border-radius: 8px;
+  }
+
+  .color-count {
+    text-align: center;
+  }
+
+  .color-count .swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    margin: 0 auto 4px;
+    border: 2px solid #475569;
+  }
+
+  .color-count .swatch.dark-sq { background: #6366f1; }
+  .color-count .swatch.light-sq { background: #fbbf24; }
+
+  .color-count .cnt {
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .color-count .cnt.dark-text { color: #818cf8; }
+  .color-count .cnt.light-text { color: #fbbf24; }
+
+  .color-count .cnt-label {
+    font-size: 0.7rem;
+    color: #64748b;
+  }
+
+  .color-counts.hidden { display: none; }
+
+  .mismatch-warning {
+    text-align: center;
+    padding: 8px;
+    background: #7f1d1d;
+    border: 1px solid #ef4444;
+    border-radius: 6px;
+    color: #fca5a5;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-top: 8px;
+    display: none;
+  }
+
+  .mismatch-warning.visible { display: block; }
+
+  .match-success {
+    text-align: center;
+    padding: 8px;
+    background: #052e16;
+    border: 1px solid #22c55e;
+    border-radius: 6px;
+    color: #86efac;
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin-top: 8px;
+    display: none;
+  }
+
+  .match-success.visible { display: block; }
+
+  .board-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .phase-banner {
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-align: center;
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 600px;
+    transition: all 0.3s;
+    line-height: 1.5;
+  }
+
+  .phase-remove { background: #422006; color: #fbbf24; border: 1px solid #d97706; }
+  .phase-tile { background: #1b2e1b; color: #86efac; border: 1px solid #22c55e; }
+  .phase-impossible { background: #4c0519; color: #fda4af; border: 1px solid #e11d48; }
+  .phase-solved { background: linear-gradient(135deg, #1e1b4b, #4a1942); color: #c4b5fd; border: 1px solid #7c3aed; }
+
+  .board-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .board {
+    display: grid;
+    gap: 1px;
+    background: #475569;
+    border: 3px solid #64748b;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .cell {
+    --cell-size: 56px;
+    width: var(--cell-size);
+    height: var(--cell-size);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    position: relative;
+  }
+
+  /* Chessboard coloring - subtle by default, vivid when revealed */
+  .cell.light-square { background: #334155; }
+  .cell.dark-square { background: #283548; }
+
+  .board.coloring-revealed .cell.light-square { background: #fbbf24; }
+  .board.coloring-revealed .cell.dark-square { background: #6366f1; }
+
+  .cell:hover:not(.removed):not(.filled) {
+    filter: brightness(1.3);
+  }
+
+  .cell.removed {
+    background: #0f172a !important;
+    cursor: default;
+  }
+
+  .cell.removed::after {
+    content: '\2715';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #475569;
+    font-size: calc(var(--cell-size) * 0.4);
+    font-weight: bold;
+  }
+
+  .cell.filled {
+    cursor: default;
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,0.15);
+  }
+
+  .cell.filled.just-placed {
+    animation: pop 0.25s ease-out;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.8); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+
+  .cell.preview { opacity: 0.7; }
+  .cell.preview-invalid { background: #7f1d1d !important; opacity: 0.5; }
+
+  /* Domino colors */
+  .domino-0  { background-color: #ef4444 !important; }
+  .domino-1  { background-color: #f97316 !important; }
+  .domino-2  { background-color: #eab308 !important; }
+  .domino-3  { background-color: #22c55e !important; }
+  .domino-4  { background-color: #14b8a6 !important; }
+  .domino-5  { background-color: #3b82f6 !important; }
+  .domino-6  { background-color: #8b5cf6 !important; }
+  .domino-7  { background-color: #ec4899 !important; }
+  .domino-8  { background-color: #f43f5e !important; }
+  .domino-9  { background-color: #06b6d4 !important; }
+  .domino-10 { background-color: #84cc16 !important; }
+  .domino-11 { background-color: #d946ef !important; }
+  .domino-12 { background-color: #fb923c !important; }
+  .domino-13 { background-color: #2dd4bf !important; }
+  .domino-14 { background-color: #818cf8 !important; }
+  .domino-15 { background-color: #fb7185 !important; }
+  .domino-16 { background-color: #facc15 !important; }
+  .domino-17 { background-color: #4ade80 !important; }
+  .domino-18 { background-color: #38bdf8 !important; }
+  .domino-19 { background-color: #c084fc !important; }
+  .domino-20 { background-color: #f472b6 !important; }
+  .domino-21 { background-color: #a3e635 !important; }
+  .domino-22 { background-color: #e879f9 !important; }
+  .domino-23 { background-color: #fda4af !important; }
+  .domino-24 { background-color: #67e8f9 !important; }
+  .domino-25 { background-color: #bef264 !important; }
+  .domino-26 { background-color: #a78bfa !important; }
+  .domino-27 { background-color: #fdba74 !important; }
+  .domino-28 { background-color: #7dd3fc !important; }
+  .domino-29 { background-color: #d8b4fe !important; }
+  .domino-30 { background-color: #fcd34d !important; }
+  .domino-31 { background-color: #86efac !important; }
+
+  .info-panel {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .explanation {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #cbd5e1;
+  }
+
+  .explanation strong { color: #f59e0b; }
+  .explanation .highlight { color: #a78bfa; font-weight: 600; }
+  .explanation .danger { color: #f87171; font-weight: 600; }
+  .explanation .success { color: #4ade80; font-weight: 600; }
+
+  .step-list {
+    margin-top: 8px;
+    padding-left: 20px;
+  }
+
+  .step-list li {
+    margin-bottom: 6px;
+    color: #94a3b8;
+  }
+
+  .math-callout {
+    background: #172554;
+    border: 1px solid #1d4ed8;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+
+  .math-callout .math-label {
+    color: #60a5fa;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .math-callout .math-content {
+    color: #93c5fd;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .impossible-callout {
+    background: #4c0519;
+    border: 1px solid #e11d48;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+
+  .impossible-callout .callout-label {
+    color: #fda4af;
+    font-weight: 700;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+
+  .impossible-callout .callout-content {
+    color: #fecdd3;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .trophy {
+    text-align: center;
+    padding: 20px;
+    display: none;
+  }
+
+  .trophy.visible {
+    display: block;
+    animation: celebrate 0.5s ease-out;
+  }
+
+  .trophy .emoji { font-size: 3rem; display: block; margin-bottom: 8px; }
+  .trophy .msg { font-size: 1.1rem; color: #a78bfa; font-weight: 600; }
+
+  @keyframes celebrate {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .keyboard-hint {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  .keyboard-hint kbd {
+    background: #334155;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    border: 1px solid #475569;
+  }
+
+  @media (max-width: 960px) {
+    .main-layout {
+      flex-direction: column;
+      align-items: center;
+    }
+    .sidebar, .info-panel {
+      width: 100%;
+      max-width: 500px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Tab Navigation -->
+  <div class="tab-bar">
+    <a href="index.html">L-Tromino Puzzle</a>
+    <a href="domino-challenge.html" class="active">Domino Challenge</a>
+  </div>
+
+  <header>
+    <h1>The Mutilated Chessboard</h1>
+    <p>Remove two squares. Can you tile the rest with dominoes?</p>
+  </header>
+
+  <div class="main-layout">
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+      <div class="card">
+        <h3>Challenges</h3>
+        <div class="challenge-buttons" id="challengeButtons">
+          <button data-challenge="free" class="active">
+            <span class="label">Free Play</span>
+            <span class="sublabel">Remove any 2 squares you want</span>
+          </button>
+          <button data-challenge="opposite">
+            <span class="label">Opposite Corners</span>
+            <span class="sublabel">Can you tile this? Try it...</span>
+          </button>
+          <button data-challenge="adjacent">
+            <span class="label">Adjacent Corners</span>
+            <span class="sublabel">How about this one?</span>
+          </button>
+          <button data-challenge="same-color">
+            <span class="label">Any Same-Color Pair</span>
+            <span class="sublabel">Pick any two squares of the same color</span>
+          </button>
+          <button data-challenge="diff-color">
+            <span class="label">Any Different-Color Pair</span>
+            <span class="sublabel">Pick any two squares of different colors</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Your Piece</h3>
+        <div class="piece-preview-area">
+          <div class="piece-mini-grid" id="piecePreview" style="grid-template-columns: repeat(2, 28px); grid-template-rows: repeat(1, 28px);">
+          </div>
+          <button class="orient-btn" id="orientBtn" title="Toggle orientation (or press R)">&#x21BB; Flip</button>
+        </div>
+        <div class="keyboard-hint">
+          Press <kbd>R</kbd> to flip &middot; <kbd>Z</kbd> to undo
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Actions</h3>
+        <div class="action-buttons">
+          <button class="btn-undo" id="undoBtn" disabled>&#x21A9; Undo Last Domino</button>
+          <button class="btn-clear" id="clearBtn">&#x2715; Clear Dominoes</button>
+          <button class="btn-reveal" id="revealBtn">Show Chessboard Coloring</button>
+          <button class="btn-reset" id="resetBtn">New Board</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Progress</h3>
+        <div class="stats">
+          <div class="stat">
+            <div class="value" id="placedCount">0</div>
+            <div class="label">Placed</div>
+          </div>
+          <div class="stat">
+            <div class="value" id="totalNeeded">31</div>
+            <div class="label">Needed</div>
+          </div>
+          <div class="stat">
+            <div class="value" id="cellsLeft">62</div>
+            <div class="label">Cells Left</div>
+          </div>
+        </div>
+        <div class="color-counts hidden" id="colorCounts">
+          <div class="color-count">
+            <div class="swatch dark-sq"></div>
+            <div class="cnt dark-text" id="darkCount">32</div>
+            <div class="cnt-label">Dark left</div>
+          </div>
+          <div class="color-count">
+            <div class="swatch light-sq"></div>
+            <div class="cnt light-text" id="lightCount">32</div>
+            <div class="cnt-label">Light left</div>
+          </div>
+        </div>
+        <div class="mismatch-warning" id="mismatchWarning">
+          Dark and light counts don't match! Each domino needs one of each. Tiling is impossible!
+        </div>
+        <div class="match-success" id="matchSuccess">
+          Counts are equal! Tiling should be possible. Can you do it?
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Board -->
+    <div class="board-area">
+      <div class="phase-banner phase-remove" id="phaseBanner">
+        Click two squares to remove them, then try to tile the rest with dominoes!
+      </div>
+      <div class="board-container">
+        <div class="board" id="board"></div>
+      </div>
+      <div class="trophy" id="trophy">
+        <span class="emoji">&#x1F389;&#x1F3C6;&#x1F389;</span>
+        <span class="msg" id="trophyMsg">You tiled the whole board!</span>
+      </div>
+    </div>
+
+    <!-- Right Info Panel -->
+    <div class="info-panel">
+      <div class="card">
+        <h3>The Puzzle</h3>
+        <div class="explanation">
+          A <strong>domino</strong> covers exactly <strong>2 squares</strong> side by side.
+          <br><br>
+          A normal 8&times;8 chessboard has 64 squares, and can be tiled with 32 dominoes.
+          <br><br>
+          But what if you <strong>remove 2 squares</strong>? Can you always tile the remaining 62 squares with 31 dominoes?
+          <br><br>
+          <span class="danger">Sometimes yes, sometimes no!</span> The answer depends on <em>which</em> squares you remove.
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>How to Play</h3>
+        <div class="explanation">
+          <ol class="step-list">
+            <li>Choose a challenge or pick Free Play</li>
+            <li>Click 2 squares to remove them</li>
+            <li>Hover to preview your domino</li>
+            <li>Click to place it</li>
+            <li>Press <strong>R</strong> to flip horizontal/vertical</li>
+            <li>Try to fill every remaining square!</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card" id="insightCard">
+        <h3>The Secret</h3>
+        <div class="explanation" id="insightContent">
+          Try the <strong>Opposite Corners</strong> challenge first. Struggle with it for a while.
+          <br><br>
+          Then click <strong>"Show Chessboard Coloring"</strong> to reveal the hidden pattern...
+          <br><br>
+          The key question: <span class="highlight">what color are the squares you removed?</span>
+          <div class="math-callout">
+            <div class="math-label">The domino rule</div>
+            <div class="math-content">
+              Every domino, whether horizontal or vertical, always covers exactly <strong>one dark</strong> and <strong>one light</strong> square.
+              <br><br>
+              So 31 dominoes need exactly 31 dark and 31 light squares.
+              <br><br>
+              If you remove two squares of the <strong style="color:#f87171;">same color</strong>, you get 32 vs 30 &mdash; <strong style="color:#f87171;">impossible!</strong>
+              <br><br>
+              If you remove two squares of <strong style="color:#4ade80;">different colors</strong>, you get 31 vs 31 &mdash; <strong style="color:#4ade80;">always possible!</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const SIZE = 8;
+  let grid = [];           // 0=empty, -1=removed, >0=domino id
+  let removedCells = [];   // up to 2
+  let phase = 'remove';    // 'remove' | 'tile' | 'solved' | 'impossible'
+  let orientation = 0;     // 0=horizontal, 1=vertical
+  let pieceCounter = 0;
+  let placedPieces = [];   // stack of [{r,c}, {r,c}]
+  let coloringRevealed = false;
+  let currentChallenge = 'free';
+  let maxRemovals = 2;
+
+  const boardEl = document.getElementById('board');
+  const phaseBanner = document.getElementById('phaseBanner');
+  const piecePreviewEl = document.getElementById('piecePreview');
+  const placedCountEl = document.getElementById('placedCount');
+  const totalNeededEl = document.getElementById('totalNeeded');
+  const cellsLeftEl = document.getElementById('cellsLeft');
+  const trophyEl = document.getElementById('trophy');
+  const trophyMsg = document.getElementById('trophyMsg');
+  const undoBtn = document.getElementById('undoBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const revealBtn = document.getElementById('revealBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const orientBtn = document.getElementById('orientBtn');
+  const colorCountsEl = document.getElementById('colorCounts');
+  const darkCountEl = document.getElementById('darkCount');
+  const lightCountEl = document.getElementById('lightCount');
+  const mismatchWarning = document.getElementById('mismatchWarning');
+  const matchSuccess = document.getElementById('matchSuccess');
+  const insightContent = document.getElementById('insightContent');
+
+  function isLight(r, c) { return (r + c) % 2 === 0; }
+
+  function init() {
+    grid = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
+    removedCells = [];
+    phase = 'remove';
+    orientation = 0;
+    pieceCounter = 0;
+    placedPieces = [];
+    trophyEl.classList.remove('visible');
+    mismatchWarning.classList.remove('visible');
+    matchSuccess.classList.remove('visible');
+    undoBtn.disabled = true;
+    updateBanner();
+    updateStats();
+    renderBoard();
+    renderPiecePreview();
+  }
+
+  function setupChallenge(type) {
+    currentChallenge = type;
+    init();
+
+    if (type === 'opposite') {
+      removeCell(0, 0);
+      removeCell(7, 7);
+      finishRemoval();
+    } else if (type === 'adjacent') {
+      removeCell(0, 0);
+      removeCell(0, 1);
+      finishRemoval();
+    } else if (type === 'same-color') {
+      // Let user pick, but validate same color
+      maxRemovals = 2;
+      phaseBanner.textContent = 'Click two squares of the SAME color to remove them.';
+    } else if (type === 'diff-color') {
+      maxRemovals = 2;
+      phaseBanner.textContent = 'Click two squares of DIFFERENT colors to remove them.';
+    } else {
+      maxRemovals = 2;
+    }
+  }
+
+  function removeCell(r, c) {
+    grid[r][c] = -1;
+    removedCells.push({r, c});
+  }
+
+  function finishRemoval() {
+    phase = 'tile';
+
+    // Check if tiling is possible
+    let darkRemoved = 0, lightRemoved = 0;
+    removedCells.forEach(({r, c}) => {
+      if (isLight(r, c)) lightRemoved++;
+      else darkRemoved++;
+    });
+
+    const darkLeft = 32 - darkRemoved;
+    const lightLeft = 32 - lightRemoved;
+    const totalLeft = darkLeft + lightLeft;
+    const needed = totalLeft / 2;
+
+    totalNeededEl.textContent = needed;
+    cellsLeftEl.textContent = totalLeft;
+
+    if (coloringRevealed) {
+      updateColorCounts();
+    }
+
+    updateBanner();
+    renderBoard();
+  }
+
+  function cellSize() {
+    const maxBoard = Math.min(520, window.innerWidth - 620);
+    return Math.max(28, Math.min(60, Math.floor(maxBoard / SIZE)));
+  }
+
+  function renderBoard() {
+    const cs = cellSize();
+    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, ${cs}px)`;
+    boardEl.style.setProperty('--cell-size', cs + 'px');
+    boardEl.innerHTML = '';
+
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.classList.add(isLight(r, c) ? 'light-square' : 'dark-square');
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+
+        if (grid[r][c] === -1) {
+          cell.classList.add('removed');
+        } else if (grid[r][c] > 0) {
+          cell.classList.add('filled', 'domino-' + (grid[r][c] % 32));
+        }
+
+        cell.addEventListener('click', () => onCellClick(r, c));
+        cell.addEventListener('mouseenter', () => onCellHover(r, c));
+        cell.addEventListener('mouseleave', () => clearPreview());
+        cell.addEventListener('touchend', (e) => { e.preventDefault(); onCellClick(r, c); });
+
+        boardEl.appendChild(cell);
+      }
+    }
+
+    if (coloringRevealed) {
+      boardEl.classList.add('coloring-revealed');
+    } else {
+      boardEl.classList.remove('coloring-revealed');
+    }
+  }
+
+  function getCell(r, c) {
+    return boardEl.children[r * SIZE + c];
+  }
+
+  function renderPiecePreview() {
+    if (orientation === 0) {
+      piecePreviewEl.style.gridTemplateColumns = 'repeat(2, 28px)';
+      piecePreviewEl.style.gridTemplateRows = 'repeat(1, 28px)';
+    } else {
+      piecePreviewEl.style.gridTemplateColumns = 'repeat(1, 28px)';
+      piecePreviewEl.style.gridTemplateRows = 'repeat(2, 28px)';
+    }
+    piecePreviewEl.innerHTML = '';
+    for (let i = 0; i < 2; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'piece-mini-cell filled';
+      piecePreviewEl.appendChild(cell);
+    }
+  }
+
+  function updateBanner() {
+    phaseBanner.className = 'phase-banner';
+    if (phase === 'remove') {
+      phaseBanner.classList.add('phase-remove');
+      if (currentChallenge === 'same-color') {
+        phaseBanner.textContent = `Click two squares of the SAME color to remove them. (${removedCells.length}/2 selected)`;
+      } else if (currentChallenge === 'diff-color') {
+        phaseBanner.textContent = `Click two squares of DIFFERENT colors to remove them. (${removedCells.length}/2 selected)`;
+      } else {
+        phaseBanner.textContent = `Click ${2 - removedCells.length} square${2 - removedCells.length !== 1 ? 's' : ''} to remove, then try to tile the rest with dominoes!`;
+      }
+    } else if (phase === 'tile') {
+      phaseBanner.classList.add('phase-tile');
+      phaseBanner.textContent = 'Place dominoes to fill the board! Hover to preview, click to place.';
+    } else if (phase === 'impossible') {
+      phaseBanner.classList.add('phase-impossible');
+      phaseBanner.textContent = 'This tiling is IMPOSSIBLE! Click "Show Chessboard Coloring" to see why.';
+    } else if (phase === 'solved') {
+      phaseBanner.classList.add('phase-solved');
+      phaseBanner.textContent = 'The board is completely tiled!';
+    }
+  }
+
+  function updateStats() {
+    const totalRemoved = removedCells.length;
+    const totalLeft = SIZE * SIZE - totalRemoved;
+    const needed = Math.floor(totalLeft / 2);
+    const placed = placedPieces.length;
+    placedCountEl.textContent = placed;
+    totalNeededEl.textContent = needed;
+    cellsLeftEl.textContent = totalLeft - placed * 2;
+  }
+
+  function updateColorCounts() {
+    let darkLeft = 0, lightLeft = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (grid[r][c] === 0) {
+          if (isLight(r, c)) lightLeft++;
+          else darkLeft++;
+        }
+      }
+    }
+    darkCountEl.textContent = darkLeft;
+    lightCountEl.textContent = lightLeft;
+    colorCountsEl.classList.remove('hidden');
+
+    if (removedCells.length === 2) {
+      if (darkLeft !== lightLeft) {
+        mismatchWarning.classList.add('visible');
+        matchSuccess.classList.remove('visible');
+      } else {
+        mismatchWarning.classList.remove('visible');
+        matchSuccess.classList.add('visible');
+      }
+    }
+  }
+
+  // === INTERACTION ===
+  function onCellClick(r, c) {
+    if (phase === 'remove') {
+      if (grid[r][c] === -1) return; // already removed
+
+      // Validate for constrained challenges
+      if (removedCells.length === 1) {
+        const first = removedCells[0];
+        const firstIsLight = isLight(first.r, first.c);
+        const secondIsLight = isLight(r, c);
+
+        if (currentChallenge === 'same-color' && firstIsLight !== secondIsLight) {
+          phaseBanner.textContent = 'Those are different colors! Pick a square that matches the first one.';
+          return;
+        }
+        if (currentChallenge === 'diff-color' && firstIsLight === secondIsLight) {
+          phaseBanner.textContent = 'Those are the same color! Pick a square of the opposite color.';
+          return;
+        }
+      }
+
+      removeCell(r, c);
+      renderBoard();
+      updateStats();
+
+      if (removedCells.length >= 2) {
+        finishRemoval();
+      } else {
+        updateBanner();
+      }
+      return;
+    }
+
+    if (phase === 'tile') {
+      const cells = getDominoCells(r, c);
+      if (cells && canPlace(cells)) {
+        placeDomino(cells);
+      }
+    }
+  }
+
+  function getDominoCells(r, c) {
+    if (orientation === 0) {
+      return [{r, c}, {r, c: c + 1}];
+    } else {
+      return [{r, c}, {r: r + 1, c}];
+    }
+  }
+
+  function canPlace(cells) {
+    return cells.every(({r, c}) =>
+      r >= 0 && r < SIZE && c >= 0 && c < SIZE && grid[r][c] === 0
+    );
+  }
+
+  function placeDomino(cells) {
+    pieceCounter++;
+    cells.forEach(({r, c}) => { grid[r][c] = pieceCounter; });
+    placedPieces.push(cells);
+    undoBtn.disabled = false;
+    updateStats();
+
+    // Fast update
+    cells.forEach(({r, c}) => {
+      const el = getCell(r, c);
+      el.className = 'cell filled domino-' + (pieceCounter % 32) + ' just-placed';
+      el.addEventListener('animationend', () => el.classList.remove('just-placed'), {once: true});
+    });
+
+    if (coloringRevealed) updateColorCounts();
+    checkWin();
+  }
+
+  function checkWin() {
+    const hasEmpty = grid.some(row => row.some(v => v === 0));
+    if (!hasEmpty) {
+      phase = 'solved';
+      updateBanner();
+      trophyMsg.textContent = 'You tiled the whole board with dominoes!';
+      trophyEl.classList.add('visible');
+    }
+  }
+
+  function onCellHover(r, c) {
+    if (phase !== 'tile') return;
+    const cells = getDominoCells(r, c);
+    if (!cells) return;
+
+    const valid = canPlace(cells);
+    cells.forEach(({r: cr, c: cc}) => {
+      if (cr >= 0 && cr < SIZE && cc >= 0 && cc < SIZE) {
+        const el = getCell(cr, cc);
+        if (grid[cr][cc] === 0) {
+          el.classList.add(valid ? 'preview' : 'preview-invalid');
+          if (valid) el.classList.add('domino-' + ((pieceCounter + 1) % 32));
+        }
+      }
+    });
+  }
+
+  function clearPreview() {
+    boardEl.querySelectorAll('.preview, .preview-invalid').forEach(el => {
+      el.classList.remove('preview', 'preview-invalid');
+      if (!el.classList.contains('filled')) {
+        const toRemove = [];
+        el.classList.forEach(cls => { if (cls.startsWith('domino-')) toRemove.push(cls); });
+        toRemove.forEach(cls => el.classList.remove(cls));
+      }
+    });
+  }
+
+  function undo() {
+    if (placedPieces.length === 0) return;
+    const cells = placedPieces.pop();
+    cells.forEach(({r, c}) => {
+      grid[r][c] = 0;
+      const el = getCell(r, c);
+      el.className = 'cell ' + (isLight(r, c) ? 'light-square' : 'dark-square');
+    });
+    if (phase === 'solved') {
+      phase = 'tile';
+      trophyEl.classList.remove('visible');
+      updateBanner();
+    }
+    undoBtn.disabled = placedPieces.length === 0;
+    updateStats();
+    if (coloringRevealed) updateColorCounts();
+  }
+
+  function clearDominoes() {
+    if (phase === 'remove') return;
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++)
+        if (grid[r][c] > 0) grid[r][c] = 0;
+    pieceCounter = 0;
+    placedPieces = [];
+    phase = 'tile';
+    trophyEl.classList.remove('visible');
+    undoBtn.disabled = true;
+    updateBanner();
+    updateStats();
+    renderBoard();
+    if (coloringRevealed) updateColorCounts();
+  }
+
+  function toggleColoring() {
+    coloringRevealed = !coloringRevealed;
+    revealBtn.textContent = coloringRevealed ? 'Hide Chessboard Coloring' : 'Show Chessboard Coloring';
+
+    if (coloringRevealed) {
+      boardEl.classList.add('coloring-revealed');
+      updateColorCounts();
+    } else {
+      boardEl.classList.remove('coloring-revealed');
+      colorCountsEl.classList.add('hidden');
+      mismatchWarning.classList.remove('visible');
+      matchSuccess.classList.remove('visible');
+    }
+  }
+
+  // === EVENT LISTENERS ===
+  document.getElementById('challengeButtons').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('.challenge-buttons button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    setupChallenge(btn.dataset.challenge);
+  });
+
+  orientBtn.addEventListener('click', () => {
+    orientation = 1 - orientation;
+    renderPiecePreview();
+  });
+
+  undoBtn.addEventListener('click', undo);
+  clearBtn.addEventListener('click', clearDominoes);
+  revealBtn.addEventListener('click', toggleColoring);
+  resetBtn.addEventListener('click', () => setupChallenge(currentChallenge));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'r' || e.key === 'R') {
+      orientation = 1 - orientation;
+      renderPiecePreview();
+      clearPreview();
+    }
+    if (e.key === 'z' || e.key === 'Z') {
+      undo();
+    }
+  });
+
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => renderBoard(), 150);
+  });
+
+  // === START ===
+  init();
+})();
+</script>
+
+</body>
+</html>

@@ -1,8 +1,14 @@
-# L-Tromino Tiling Puzzle
+# Tiling Puzzles
 
-An interactive web-based simulation that lets you explore one of the most beautiful results in combinatorial mathematics: **any 2^n x 2^n grid with one square removed can always be perfectly tiled using L-shaped trominoes.**
+Interactive web-based simulations exploring beautiful results in combinatorial mathematics — built as teaching tools for advanced elementary math students.
 
-[**Try it live**](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/)
+[**Try the L-Tromino Puzzle**](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/) | [**Try the Domino Challenge**](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/domino-challenge.html)
+
+---
+
+# Puzzle 1: L-Tromino Tiling
+
+**Any 2^n x 2^n grid with one square removed can always be perfectly tiled using L-shaped trominoes.**
 
 ## What is an L-Tromino?
 
@@ -70,20 +76,74 @@ A step-by-step walkthrough that scaffolds the "aha moment":
 ### Hint System
 Stuck? The hint button places the next piece from the recursive solution, helping you get unstuck without giving away the whole answer.
 
+---
+
+# Puzzle 2: The Mutilated Chessboard (Domino Challenge)
+
+**Remove two squares from an 8x8 chessboard. Can you tile the rest with dominoes? Sometimes yes, sometimes no — and the reason is beautiful.**
+
+## The Puzzle
+
+A domino covers exactly 2 adjacent squares. A standard 8x8 board (64 squares) can be tiled with 32 dominoes. But what if you remove 2 squares first?
+
+- **Remove two opposite corners** (same color) → **IMPOSSIBLE**
+- **Remove two adjacent corners** (different colors) → **ALWAYS POSSIBLE**
+
+## The Proof (The Coloring Argument)
+
+Color the board like a chessboard. Every domino — horizontal or vertical — always covers exactly **one dark square and one light square**. So 31 dominoes need exactly 31 dark and 31 light squares.
+
+- Two opposite corners are the **same color** → removing them leaves 32 of one color and 30 of the other → **impossible!**
+- Two squares of **different colors** → removing them leaves 31 and 31 → **possible!**
+
+This is one of the most elegant impossibility proofs in mathematics — accessible to anyone who can count.
+
+## Features
+
+### Five Challenge Modes
+- **Free Play** — remove any 2 squares you choose
+- **Opposite Corners** — the classic impossible case
+- **Adjacent Corners** — the classic possible case
+- **Same-Color Pair** — pick any two same-colored squares (always impossible)
+- **Different-Color Pair** — pick any two different-colored squares (always possible)
+
+### The Coloring Reveal
+The key "aha moment" — click "Show Chessboard Coloring" to reveal the hidden pattern. The board lights up with vivid colors and displays a live count of remaining dark vs. light squares, making the impossibility (or possibility) immediately visible.
+
+### Domino Placement
+- Place horizontal or vertical dominoes with hover preview
+- Flip orientation with **R** key
+- Undo with **Z**
+- Full touch support
+
+---
+
 ## How to Use
 
-Just open `index.html` in any modern web browser, or visit the [live version](https://michaellomuscio.github.io/L-Tromino-Tiling-Puzzle/). No dependencies, no build step, no server required — it's a single self-contained HTML file.
+Open `index.html` (L-Tromino) or `domino-challenge.html` (Domino Challenge) in any modern web browser, or visit the live versions above. No dependencies, no build step, no server required — they are self-contained HTML files.
+
+## Why These Two Puzzles Together?
+
+These puzzles are perfect companions because they teach opposite lessons:
+
+| | L-Tromino Puzzle | Domino Challenge |
+|---|---|---|
+| **Result** | Always possible | Sometimes impossible |
+| **Key technique** | Constructive proof (recursion) | Impossibility proof (invariant) |
+| **Big idea** | Divide and conquer | Parity / coloring arguments |
+| **Connection** | Fractals, self-similarity | Combinatorics, proof by contradiction |
+
+Together they show that math isn't just about calculating answers — it's about understanding **why** things work (or don't).
 
 ## Context
 
-This was built as a teaching tool for working with an advanced elementary-level math student. The L-tromino tiling puzzle is an ideal topic because it:
+Built as teaching tools for working with an advanced elementary-level math student. Both puzzles are:
 
-- Is **accessible** — the rules are simple enough for a 4th grader
-- Is **surprising** — "it works for ANY removed square" is a genuinely shocking result
-- Teaches **proof by recursion** — a powerful mathematical technique, presented visually
-- Connects to **fractals** — the recursive structure is self-similar at every scale
-- Builds **mathematical reasoning** — the student can discover the pattern before being told the answer
-- Involves **hands-on problem solving** — it's a puzzle, not a lecture
+- **Accessible** — simple rules, no prerequisites beyond basic arithmetic
+- **Surprising** — the results are genuinely unexpected
+- **Visual** — the proofs can be *seen*, not just read
+- **Hands-on** — puzzles, not lectures
+- **Deep** — they introduce proof techniques used throughout mathematics
 
 ## License
 
