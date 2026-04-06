@@ -124,6 +124,27 @@
   .grid-size-buttons button:hover { border-color: #60a5fa; background: #1e3a5f; }
   .grid-size-buttons button.active { border-color: #60a5fa; background: #1e3a5f; color: #60a5fa; }
 
+  .shape-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .shape-buttons button {
+    flex: 1;
+    padding: 8px 4px;
+    border: 2px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .shape-buttons button:hover { border-color: #60a5fa; background: #1e3a5f; }
+  .shape-buttons button.active { border-color: #60a5fa; background: #1e3a5f; color: #60a5fa; }
+
   .piece-preview-area {
     display: flex;
     align-items: center;
@@ -627,6 +648,17 @@
       </div>
 
       <div class="card">
+        <h3>Piece Shape</h3>
+        <div class="shape-buttons" id="shapeButtons">
+          <button data-shape="ltromino" class="active">L</button>
+          <button data-shape="straight">I</button>
+          <button data-shape="domino">Dom</button>
+          <button data-shape="ttetromino">T</button>
+          <button data-shape="square">Sq</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h3>Your Piece</h3>
         <div class="piece-preview-area">
           <div class="piece-mini-grid" id="piecePreview"></div>
@@ -763,13 +795,56 @@
   let depthCounters = {}; // track piece count per depth for coloring
   let useDepthColoring = false; // true during solve animation
 
-  // L-tromino shapes: 4 rotations
+  // L-tromino shapes: 4 rotations (kept for solver/hint)
   const SHAPES = [
     [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:0}],
     [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:1}],
     [{dr:0,dc:0}, {dr:1,dc:0}, {dr:1,dc:1}],
     [{dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}],
   ];
+
+  const PIECE_TYPES = {
+    domino: {
+      name: 'Domino', cellCount: 2,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}],
+        [{dr:0,dc:0}, {dr:1,dc:0}],
+      ]
+    },
+    ltromino: {
+      name: 'L-Tromino', cellCount: 3,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:0}],
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:1}],
+        [{dr:0,dc:0}, {dr:1,dc:0}, {dr:1,dc:1}],
+        [{dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}],
+      ]
+    },
+    straight: {
+      name: 'Straight', cellCount: 3,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:0,dc:2}],
+        [{dr:0,dc:0}, {dr:1,dc:0}, {dr:2,dc:0}],
+      ]
+    },
+    ttetromino: {
+      name: 'T-Piece', cellCount: 4,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:0,dc:2}, {dr:1,dc:1}],
+        [{dr:0,dc:0}, {dr:1,dc:0}, {dr:2,dc:0}, {dr:1,dc:1}],
+        [{dr:1,dc:0}, {dr:1,dc:1}, {dr:1,dc:2}, {dr:0,dc:1}],
+        [{dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}, {dr:2,dc:1}],
+      ]
+    },
+    square: {
+      name: 'Square', cellCount: 4,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}],
+      ]
+    },
+  };
+
+  let currentPieceType = 'ltromino';
 
   const MANUAL_COLORS = 21;
   const DEPTH_PALETTE_SIZES = [3, 4, 6, 21];
@@ -897,10 +972,15 @@
   }
 
   function renderPiecePreview() {
-    const shape = SHAPES[rotation];
+    const rots = PIECE_TYPES[currentPieceType].rotations;
+    const shape = rots[rotation % rots.length];
+    const maxR = Math.max(...shape.map(s => s.dr)) + 1;
+    const maxC = Math.max(...shape.map(s => s.dc)) + 1;
+    piecePreviewEl.style.gridTemplateColumns = `repeat(${maxC}, 28px)`;
+    piecePreviewEl.style.gridTemplateRows = `repeat(${maxR}, 28px)`;
     piecePreviewEl.innerHTML = '';
-    for (let r = 0; r < 2; r++) {
-      for (let c = 0; c < 2; c++) {
+    for (let r = 0; r < maxR; r++) {
+      for (let c = 0; c < maxC; c++) {
         const cell = document.createElement('div');
         cell.className = 'piece-mini-cell';
         if (shape.some(s => s.dr === r && s.dc === c)) {
@@ -930,11 +1010,11 @@
 
   function updateStats() {
     const totalCells = size * size - (removedCell ? 1 : 0);
-    const totalPieces = removedCell ? totalCells / 3 : Math.floor((size * size - 1) / 3);
-    const placed = placedPieces.length;
-    placedCountEl.textContent = placed;
-    totalNeededEl.textContent = totalPieces;
-    cellsLeftEl.textContent = Math.max(0, totalCells - placed * 3);
+    let coveredCells = 0;
+    placedPieces.forEach(p => coveredCells += p.cells.length);
+    placedCountEl.textContent = placedPieces.length;
+    totalNeededEl.textContent = '\u2014';
+    cellsLeftEl.textContent = Math.max(0, totalCells - coveredCells);
   }
 
   function resetInfoPanel() {
@@ -1025,7 +1105,9 @@
   }
 
   function getPlacementCells(r, c) {
-    return SHAPES[rotation].map(s => ({r: r + s.dr, c: c + s.dc}));
+    const rots = PIECE_TYPES[currentPieceType].rotations;
+    const shape = rots[rotation % rots.length];
+    return shape.map(s => ({r: r + s.dr, c: c + s.dc}));
   }
 
   function canPlace(cells) {
@@ -1493,8 +1575,17 @@
     init();
   });
 
+  document.getElementById('shapeButtons').addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON' || solving) return;
+    document.querySelectorAll('#shapeButtons button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentPieceType = e.target.dataset.shape;
+    rotation = 0;
+    renderPiecePreview();
+  });
+
   rotateBtn.addEventListener('click', () => {
-    rotation = (rotation + 1) % 4;
+    rotation = (rotation + 1) % PIECE_TYPES[currentPieceType].rotations.length;
     renderPiecePreview();
   });
 
@@ -1506,7 +1597,7 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'r' || e.key === 'R') {
-      rotation = (rotation + 1) % 4;
+      rotation = (rotation + 1) % PIECE_TYPES[currentPieceType].rotations.length;
       renderPiecePreview();
       clearPreview();
     }

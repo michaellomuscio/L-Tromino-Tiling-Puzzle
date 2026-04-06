@@ -136,6 +136,27 @@
 
   .challenge-buttons button.active .sublabel { color: #a16207; }
 
+  .shape-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .shape-buttons button {
+    flex: 1;
+    padding: 8px 4px;
+    border: 2px solid #334155;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .shape-buttons button:hover { border-color: #f59e0b; background: #422006; }
+  .shape-buttons button.active { border-color: #f59e0b; background: #422006; color: #fbbf24; }
+
   .piece-preview-area {
     display: flex;
     align-items: center;
@@ -591,14 +612,25 @@
       </div>
 
       <div class="card">
+        <h3>Piece Shape</h3>
+        <div class="shape-buttons" id="shapeButtons">
+          <button data-shape="domino" class="active">Dom</button>
+          <button data-shape="ltromino">L</button>
+          <button data-shape="straight">I</button>
+          <button data-shape="ttetromino">T</button>
+          <button data-shape="square">Sq</button>
+        </div>
+      </div>
+
+      <div class="card">
         <h3>Your Piece</h3>
         <div class="piece-preview-area">
           <div class="piece-mini-grid" id="piecePreview" style="grid-template-columns: repeat(2, 28px); grid-template-rows: repeat(1, 28px);">
           </div>
-          <button class="orient-btn" id="orientBtn" title="Toggle orientation (or press R)">&#x21BB; Flip</button>
+          <button class="orient-btn" id="orientBtn" title="Rotate piece (or press R)">&#x21BB; Rotate</button>
         </div>
         <div class="keyboard-hint">
-          Press <kbd>R</kbd> to flip &middot; <kbd>Z</kbd> to undo
+          Press <kbd>R</kbd> to rotate &middot; <kbd>Z</kbd> to undo
         </div>
       </div>
 
@@ -721,15 +753,58 @@
 <script>
 (function() {
   const SIZE = 8;
-  let grid = [];           // 0=empty, -1=removed, >0=domino id
+  let grid = [];           // 0=empty, -1=removed, >0=piece id
   let removedCells = [];   // up to 2
   let phase = 'remove';    // 'remove' | 'tile' | 'solved' | 'impossible'
-  let orientation = 0;     // 0=horizontal, 1=vertical
+  let rotation = 0;
   let pieceCounter = 0;
-  let placedPieces = [];   // stack of [{r,c}, {r,c}]
+  let placedPieces = [];   // stack of { cells: [{r,c},...] }
   let coloringRevealed = false;
   let currentChallenge = 'free';
   let maxRemovals = 2;
+
+  const PIECE_TYPES = {
+    domino: {
+      name: 'Domino', cellCount: 2,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}],
+        [{dr:0,dc:0}, {dr:1,dc:0}],
+      ]
+    },
+    ltromino: {
+      name: 'L-Tromino', cellCount: 3,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:0}],
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:1}],
+        [{dr:0,dc:0}, {dr:1,dc:0}, {dr:1,dc:1}],
+        [{dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}],
+      ]
+    },
+    straight: {
+      name: 'Straight', cellCount: 3,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:0,dc:2}],
+        [{dr:0,dc:0}, {dr:1,dc:0}, {dr:2,dc:0}],
+      ]
+    },
+    ttetromino: {
+      name: 'T-Piece', cellCount: 4,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:0,dc:2}, {dr:1,dc:1}],
+        [{dr:0,dc:0}, {dr:1,dc:0}, {dr:2,dc:0}, {dr:1,dc:1}],
+        [{dr:1,dc:0}, {dr:1,dc:1}, {dr:1,dc:2}, {dr:0,dc:1}],
+        [{dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}, {dr:2,dc:1}],
+      ]
+    },
+    square: {
+      name: 'Square', cellCount: 4,
+      rotations: [
+        [{dr:0,dc:0}, {dr:0,dc:1}, {dr:1,dc:0}, {dr:1,dc:1}],
+      ]
+    },
+  };
+
+  let currentPieceType = 'domino';
 
   const boardEl = document.getElementById('board');
   const phaseBanner = document.getElementById('phaseBanner');
@@ -757,7 +832,7 @@
     grid = Array.from({length: SIZE}, () => Array(SIZE).fill(0));
     removedCells = [];
     phase = 'remove';
-    orientation = 0;
+    rotation = 0;
     pieceCounter = 0;
     placedPieces = [];
     trophyEl.classList.remove('visible');
@@ -814,7 +889,7 @@
     const totalLeft = darkLeft + lightLeft;
     const needed = totalLeft / 2;
 
-    totalNeededEl.textContent = needed;
+    totalNeededEl.textContent = '\u2014';
     cellsLeftEl.textContent = totalLeft;
 
     if (coloringRevealed) {
@@ -871,18 +946,22 @@
   }
 
   function renderPiecePreview() {
-    if (orientation === 0) {
-      piecePreviewEl.style.gridTemplateColumns = 'repeat(2, 28px)';
-      piecePreviewEl.style.gridTemplateRows = 'repeat(1, 28px)';
-    } else {
-      piecePreviewEl.style.gridTemplateColumns = 'repeat(1, 28px)';
-      piecePreviewEl.style.gridTemplateRows = 'repeat(2, 28px)';
-    }
+    const rots = PIECE_TYPES[currentPieceType].rotations;
+    const shape = rots[rotation % rots.length];
+    const maxR = Math.max(...shape.map(s => s.dr)) + 1;
+    const maxC = Math.max(...shape.map(s => s.dc)) + 1;
+    piecePreviewEl.style.gridTemplateColumns = `repeat(${maxC}, 28px)`;
+    piecePreviewEl.style.gridTemplateRows = `repeat(${maxR}, 28px)`;
     piecePreviewEl.innerHTML = '';
-    for (let i = 0; i < 2; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'piece-mini-cell filled';
-      piecePreviewEl.appendChild(cell);
+    for (let r = 0; r < maxR; r++) {
+      for (let c = 0; c < maxC; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'piece-mini-cell';
+        if (shape.some(s => s.dr === r && s.dc === c)) {
+          cell.classList.add('filled');
+        }
+        piecePreviewEl.appendChild(cell);
+      }
     }
   }
 
@@ -912,11 +991,11 @@
   function updateStats() {
     const totalRemoved = removedCells.length;
     const totalLeft = SIZE * SIZE - totalRemoved;
-    const needed = Math.floor(totalLeft / 2);
-    const placed = placedPieces.length;
-    placedCountEl.textContent = placed;
-    totalNeededEl.textContent = needed;
-    cellsLeftEl.textContent = totalLeft - placed * 2;
+    let coveredCells = 0;
+    placedPieces.forEach(p => coveredCells += p.cells.length);
+    placedCountEl.textContent = placedPieces.length;
+    totalNeededEl.textContent = '\u2014';
+    cellsLeftEl.textContent = Math.max(0, totalLeft - coveredCells);
   }
 
   function updateColorCounts() {
@@ -978,19 +1057,17 @@
     }
 
     if (phase === 'tile') {
-      const cells = getDominoCells(r, c);
+      const cells = getPlacementCells(r, c);
       if (cells && canPlace(cells)) {
-        placeDomino(cells);
+        placePiece(cells);
       }
     }
   }
 
-  function getDominoCells(r, c) {
-    if (orientation === 0) {
-      return [{r, c}, {r, c: c + 1}];
-    } else {
-      return [{r, c}, {r: r + 1, c}];
-    }
+  function getPlacementCells(r, c) {
+    const rots = PIECE_TYPES[currentPieceType].rotations;
+    const shape = rots[rotation % rots.length];
+    return shape.map(s => ({r: r + s.dr, c: c + s.dc}));
   }
 
   function canPlace(cells) {
@@ -999,10 +1076,10 @@
     );
   }
 
-  function placeDomino(cells) {
+  function placePiece(cells) {
     pieceCounter++;
     cells.forEach(({r, c}) => { grid[r][c] = pieceCounter; });
-    placedPieces.push(cells);
+    placedPieces.push({ cells });
     undoBtn.disabled = false;
     updateStats();
 
@@ -1010,6 +1087,7 @@
     cells.forEach(({r, c}) => {
       const el = getCell(r, c);
       el.className = 'cell filled domino-' + (pieceCounter % 32) + ' just-placed';
+      if (coloringRevealed) el.classList.add(isLight(r, c) ? 'light-square' : 'dark-square');
       el.addEventListener('animationend', () => el.classList.remove('just-placed'), {once: true});
     });
 
@@ -1029,7 +1107,7 @@
 
   function onCellHover(r, c) {
     if (phase !== 'tile') return;
-    const cells = getDominoCells(r, c);
+    const cells = getPlacementCells(r, c);
     if (!cells) return;
 
     const valid = canPlace(cells);
@@ -1057,8 +1135,8 @@
 
   function undo() {
     if (placedPieces.length === 0) return;
-    const cells = placedPieces.pop();
-    cells.forEach(({r, c}) => {
+    const piece = placedPieces.pop();
+    piece.cells.forEach(({r, c}) => {
       grid[r][c] = 0;
       const el = getCell(r, c);
       el.className = 'cell ' + (isLight(r, c) ? 'light-square' : 'dark-square');
@@ -1113,8 +1191,17 @@
     setupChallenge(btn.dataset.challenge);
   });
 
+  document.getElementById('shapeButtons').addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') return;
+    document.querySelectorAll('#shapeButtons button').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    currentPieceType = e.target.dataset.shape;
+    rotation = 0;
+    renderPiecePreview();
+  });
+
   orientBtn.addEventListener('click', () => {
-    orientation = 1 - orientation;
+    rotation = (rotation + 1) % PIECE_TYPES[currentPieceType].rotations.length;
     renderPiecePreview();
   });
 
@@ -1125,7 +1212,7 @@
 
   document.addEventListener('keydown', e => {
     if (e.key === 'r' || e.key === 'R') {
-      orientation = 1 - orientation;
+      rotation = (rotation + 1) % PIECE_TYPES[currentPieceType].rotations.length;
       renderPiecePreview();
       clearPreview();
     }
