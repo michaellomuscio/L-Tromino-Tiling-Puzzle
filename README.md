@@ -58,6 +58,9 @@ This recursive structure is closely related to **fractals** — the same pattern
 - Undo with **Z**
 - Full touch support for tablets
 
+### Extension: Try Other Shapes!
+The L-tromino is the star of the puzzle, but a shape selector lets you experiment with other pieces — **Straight Tromino (I), Domino, T-Tetromino, and Square**. Can you tile the board with a different shape? Why do some shapes work and others don't? What's special about the L? These become natural follow-up questions once the main puzzle clicks.
+
 ### Watch the Recursive Solution
 - Animated step-by-step visualization of the recursive algorithm
 - **Quadrant overlays** show which sub-problem the algorithm is currently solving, so you can literally *see* the divide-and-conquer in action
@@ -112,9 +115,12 @@ The key "aha moment" — click "Show Chessboard Coloring" to reveal the hidden p
 
 ### Domino Placement
 - Place horizontal or vertical dominoes with hover preview
-- Flip orientation with **R** key
+- Rotate with **R** key
 - Undo with **Z**
 - Full touch support
+
+### Extension: Try Other Shapes!
+Dominoes are the focus of the coloring argument, but you can also experiment with **L-Trominoes, Straight Trominoes, T-Tetrominoes, and Squares**. Does the same-color impossibility still apply with other pieces? (Hint: the coloring argument is specific to dominoes — explore why!)
 
 ---
 
